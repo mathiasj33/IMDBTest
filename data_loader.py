@@ -75,6 +75,7 @@ class DataLoader:
         # TODO
         pass
 
+
 if __name__ == '__main__':
     dl = DataLoader()
     dl.load_vocab()
