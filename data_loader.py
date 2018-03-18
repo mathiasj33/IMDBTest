@@ -2,8 +2,9 @@ from nltk.corpus import movie_reviews, stopwords
 from nltk import FreqDist
 import string
 import numpy as np
-import random
 import pickle
+from enum import Enum
+import random
 
 
 class DataLoader:
@@ -12,14 +13,12 @@ class DataLoader:
         self.vocab = []
         self.labelled_vectors = []
 
-    @staticmethod
     def save_words(self):
         words = [w for w in movie_reviews.words() if
                  w not in string.punctuation and w not in stopwords.words('english')]
         with open('data/words.txt', 'w') as infile:
             infile.write('\n'.join(words))
 
-    @staticmethod
     def save_vocab(self, size):
         with open('data/words.txt', 'r') as word_file:
             words = word_file.read().splitlines()
@@ -42,42 +41,57 @@ class DataLoader:
 
     def save_labelled_vectors(self):
         self.load_vocab()
-        last_train_index = int(0.6 * len(movie_reviews.fileids()))
-        posids = movie_reviews.fileids('pos')[:last_train_index]
-        negids = movie_reviews.fileids('neg')[:last_train_index]
-        length = len(posids) + len(negids)
+        fileids = movie_reviews.fileids()
+        random.shuffle(fileids)
+        self.save_labelled_vectors_type(DataType.TRAIN, fileids)
+        self.save_labelled_vectors_type(DataType.TEST, fileids)
+
+    def save_labelled_vectors_type(self, type, fileids):
+        length = len(fileids)
+        first_index = 0 if type == DataType.TRAIN else int(0.6 * length) + 1
+        last_index = int(0.6 * length) if type == DataType.TRAIN else length
         count = 0
+        count_pos = 0
+        count_neg = 0
         reviews = []
-        for i in range(len(posids)):
-            reviews.append((self.to_vector(movie_reviews.words(fileids=[posids[i]])), 1))
+        for i in range(first_index, last_index, 1):
+            fileid = fileids[i]
+            label = 1 if movie_reviews.categories(fileid)[0] == 'pos' else 0
+            reviews.append((self.to_vector(movie_reviews.words(fileids=fileid)), label))
             count += 1
+            if label == 1:
+                count_pos += 1
+            else:
+                count_neg += 1
             if count % 10 == 0:
-                print('{}/{}'.format(count, length))
+                print('{}/{}. Label: {}'.format(count, last_index - first_index, label))
 
-        for i in range(len(negids)):
-            reviews.append((self.to_vector(movie_reviews.words(fileids=[negids[i]])), 0))
-            count += 1
-            if count % 10 == 0:
-                print('{}/{}'.format(count, length))
-
-        with open('data/labelled_vectors', 'wb') as infile:
+        with open('data/labelled_vectors_{}'.format(type), 'wb+') as infile:
             pickle.dump(reviews, infile)
 
-    def load_labelled_vectors(self):
-        with open('data/labelled_vectors', 'rb') as infile:
-            self.labelled_vectors = pickle.load(infile)
+        print("Pos: {}; Neg: {}".format(count_pos, count_neg))
+
+    def load_labelled_vectors(self, type):
+        with open('data/labelled_vectors_{}'.format(type), 'rb') as infile:
+            return pickle.load(infile)
 
     def display_labelled_vectors(self):
         for r in self.labelled_vectors:
             print('{}: {}'.format(self.from_vector(r[0]), r[1]))
 
     def load_reviews(self):
-        # TODO
-        pass
+        return self.load_labelled_vectors(DataType.TRAIN), self.load_labelled_vectors(DataType.TEST)
+
+
+class DataType(Enum):
+    TEST = 1
+    TRAIN = 2
 
 
 if __name__ == '__main__':
+    # acc: 530 ca.
     dl = DataLoader()
-    dl.load_vocab()
-    dl.load_labelled_vectors()
-    dl.display_labelled_vectors()
+    # dl.save_vocab(500)
+    dl.save_labelled_vectors()
+    # dl.load_labelled_vectors()
+    # dl.display_labelled_vectors()
