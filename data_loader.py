@@ -75,8 +75,13 @@ class DataLoader:
         with open('data/labelled_vectors_{}'.format(type), 'rb') as infile:
             return pickle.load(infile)
 
-    def display_labelled_vectors(self):
-        for r in self.labelled_vectors:
+    def mini_batches(self, size):
+        data = self.load_labelled_vectors(DataType.TRAIN)
+        for i in range(int(len(data)/size)):
+            yield data[i*size:i*size+size]
+
+    def display_labelled_vectors(self, type):
+        for r in self.load_labelled_vectors(type):
             print('{}: {}'.format(self.from_vector(r[0]), r[1]))
 
     def load_reviews(self):
@@ -92,6 +97,6 @@ if __name__ == '__main__':
     # acc: 530 ca.
     dl = DataLoader()
     # dl.save_vocab(500)
-    dl.save_labelled_vectors()
-    # dl.load_labelled_vectors()
-    # dl.display_labelled_vectors()
+    # dl.save_labelled_vectors()
+    dl.load_vocab()
+    dl.display_labelled_vectors(DataType.TRAIN)
