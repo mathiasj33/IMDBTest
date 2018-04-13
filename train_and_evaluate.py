@@ -51,7 +51,7 @@ def train():
             sess.run(train_step, feed_dict={x: mini_batch[0], y_: mini_batch[1]})
         print("Epoch {} accuracy: {:.2f}%".format(i + 1, get_accuracy(sess, x, y, y_) * 100))
 
-    print("Final accuracy: {:.2f}%".format(get_accuracy() * 100))
+    print("Final accuracy: {:.2f}%".format(get_accuracy(sess, x, y, y_) * 100))
 
 
 if __name__ == '__main__':
